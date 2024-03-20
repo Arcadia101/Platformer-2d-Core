@@ -35,7 +35,6 @@ public class Movement2D : MonoBehaviour
     [SerializeField] private int _extraJumps;
     [SerializeField] private float _coyoteTime;
     [SerializeField] private float _jumpBufferLength;
-    [SerializeField] private float _rbvelocityY; //testing
     private int _extraJumpsValue;
     private float _coyoteTimeCounter;
     private float _jumpBufferCounter;
@@ -93,10 +92,9 @@ public class Movement2D : MonoBehaviour
 
     private void Update()
     {
-        _rbvelocityY = _rb.velocity.y;
         _horizontalInput = GetInput().x;
         _verticalInput = GetInput().y;
-        if (_actions.Player.Jump.WasPressedThisFrame())
+        if (_actions.Player.Jump.WasPressedThisFrame() )
         {
             _jumpBufferCounter = _jumpBufferLength;
         }
@@ -139,7 +137,7 @@ public class Movement2D : MonoBehaviour
     private void Movement()
     {
         if (_canMove) MoveCharacter();
-        //else _rb.velocity = Vector2.Lerp(_rb.velocity, (new Vector2(_horizontalInput * _maxMoveSpeed, _rb.velocity.y)), 0.5f * Time.deltaTime);
+        else if (!_wallClimb || !_wallGrab) _rb.velocity = Vector2.Lerp(_rb.velocity, (new Vector2(_horizontalInput * _maxMoveSpeed, _rb.velocity.y)), 0.5f * Time.deltaTime);
         if (_onGround)
         {
             ApplyGroundLinearDrag();
@@ -156,11 +154,11 @@ public class Movement2D : MonoBehaviour
             ApplyAirLinearDrag();
             FallMultiplier();
             _coyoteTimeCounter -= Time.fixedDeltaTime;
-            if (!_onWall || _rbvelocityY < 0 || _wallClimb) _isJumping = false;
+            if (!_onWall || _rb.velocity.y < 0 || _wallClimb) _isJumping = false;
         }
         if (_canJump)
         {
-            if (_onWall && !_onGround)
+            if (_onWall && !_onGround && _wallJumpsCounter > 0)
             {
                 if (!_wallClimb && (_onRightWall && _horizontalInput > 0 || !_onRightWall && _horizontalInput < 0))
                 {
@@ -175,7 +173,7 @@ public class Movement2D : MonoBehaviour
                 _wallJumpsCounter--;
                 Flip();
             }
-            else
+            else if(_onGround || (!_onGround && !_onWall && _extraJumpsValue > 0))
             {
                 Jump(Vector2.up);
             }
