@@ -39,19 +39,22 @@ public class Movement2D : MonoBehaviour
     private int _extraJumpsValue;
     private float _coyoteTimeCounter;
     private float _jumpBufferCounter;
-    private bool _canJump => _jumpBufferCounter > 0f && (_coyoteTime > 0f || _extraJumpsValue > 0 || _onWall);
+    private bool _canJump => _jumpBufferCounter > 0f && (_coyoteTime > 0f || _extraJumpsValue > 0 || _canWallJump);
+    private bool _canWallJump => _onWall && !_onGround && _wallJumpsCounter > 0f;
     private bool _isJumping = false;
 
     [Header("Wall Movement Variables")]
     [SerializeField] private float _wallSlideModifier;
-    [SerializeField] private float _wallRunModifier;
-    [SerializeField] private float _wallRunTime;
+    [SerializeField] private float _wallClimbModifier;
+    [SerializeField] private float _wallClimbTime;
     [SerializeField] private float _wallJumpXVelocityHaltDelay;
-    private float _wallRunTimeCounter;
+    [SerializeField] private int _maxWallJumps;
+    private int _wallJumpsCounter;
+    private float _wallClimbTimeCounter;
     private float _verticalInput;
-    private bool _wallGrab => _onWall && !_onGround && _actions.Player.Grab.phase == InputActionPhase.Performed && !_wallRun;
-    private bool _wallSlide => _onWall && !_onGround && !_actions.Player.Grab.IsPressed() && _rb.velocity.y < 0f && !_wallRun;
-    private bool _wallRun => _onWall && _verticalInput > 0f && _actions.Player.Grab.phase == InputActionPhase.Performed && _wallRunTimeCounter > 0f;
+    private bool _wallGrab => _onWall && !_onGround && _actions.Player.Grab.phase == InputActionPhase.Performed && !_wallClimb && _wallClimbTimeCounter > 0f;
+    private bool _wallSlide => _onWall && !_onGround && !_wallGrab && _rb.velocity.y < 0f && !_wallClimb;
+    private bool _wallClimb => _onWall && (_verticalInput > 0f || _verticalInput < 0f) && _actions.Player.Grab.phase == InputActionPhase.Performed && _wallClimbTimeCounter > 0f;
     
     [Header("Dash Variables")]
     [SerializeField] private float _dashSpeed;
@@ -136,17 +139,14 @@ public class Movement2D : MonoBehaviour
     private void Movement()
     {
         if (_canMove) MoveCharacter();
-        else if (_wallGrab || _wallRun)
-        {
-
-        }
-        else _rb.velocity = Vector2.Lerp(_rb.velocity, (new Vector2(_horizontalInput * _maxMoveSpeed, _rb.velocity.y)), 0.5f * Time.deltaTime);
+        //else _rb.velocity = Vector2.Lerp(_rb.velocity, (new Vector2(_horizontalInput * _maxMoveSpeed, _rb.velocity.y)), 0.5f * Time.deltaTime);
         if (_onGround)
         {
             ApplyGroundLinearDrag();
             _extraJumpsValue = _extraJumps;
             _coyoteTimeCounter = _coyoteTime;
-            _wallRunTimeCounter = _wallRunTime;
+            _wallClimbTimeCounter = _wallClimbTime;
+            _wallJumpsCounter = _maxWallJumps;
             _rb.gravityScale = 1f;
             _hasDashed = false;
 
@@ -156,13 +156,13 @@ public class Movement2D : MonoBehaviour
             ApplyAirLinearDrag();
             FallMultiplier();
             _coyoteTimeCounter -= Time.fixedDeltaTime;
-            if (!_onWall || _rbvelocityY < 0 || _wallRun) _isJumping = false;
+            if (!_onWall || _rbvelocityY < 0 || _wallClimb) _isJumping = false;
         }
         if (_canJump)
         {
             if (_onWall && !_onGround)
             {
-                if (!_wallRun && (_onRightWall && _horizontalInput > 0 || !_onRightWall && _horizontalInput < 0))
+                if (!_wallClimb && (_onRightWall && _horizontalInput > 0 || !_onRightWall && _horizontalInput < 0))
                 {
                     Debug.Log("natural wall jump");
                     StartCoroutine(NeutralWallJump());
@@ -172,6 +172,7 @@ public class Movement2D : MonoBehaviour
                     Debug.Log("wall jump");
                     WallJump();
                 }
+                _wallJumpsCounter--;
                 Flip();
             }
             else
@@ -184,7 +185,7 @@ public class Movement2D : MonoBehaviour
 
             if (_wallSlide) WallSlide();
             if (_wallGrab) GrabWall();
-            if (_wallRun) WallRun();
+            if (_wallClimb) WallClimb();
             if (_onWall) StickToWall();
         }
     }
@@ -248,12 +249,13 @@ public class Movement2D : MonoBehaviour
     {
         _rb.gravityScale = 0f;
         _rb.velocity = new Vector2(_rb.velocity.x, 0f);
+        _wallClimbTimeCounter -= Time.deltaTime;
     }
 
-    private void WallRun()
+    private void WallClimb()
     {
-        _rb.velocity = new Vector2(_rb.velocity.x, _verticalInput *_maxMoveSpeed * _wallRunModifier);
-        _wallRunTimeCounter -= Time.fixedDeltaTime;        
+        _rb.velocity = new Vector2(_rb.velocity.x, _verticalInput *_maxMoveSpeed * _wallClimbModifier);
+        _wallClimbTimeCounter -= Time.deltaTime * 2;        
     }
 
     private void WallSlide()
