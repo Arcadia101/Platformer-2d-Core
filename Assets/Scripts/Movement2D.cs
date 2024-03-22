@@ -12,6 +12,7 @@ public class Movement2D : MonoBehaviour
     private Rigidbody2D _rb;
     private Animator _animator;
     private PlayerInputActions _actions;
+    private CharacterStats _stats;
 
     [Header("Layer Masks")]
     [SerializeField] private LayerMask _groundLayer;
@@ -85,13 +86,15 @@ public class Movement2D : MonoBehaviour
     {
         _actions = new PlayerInputActions();
         _rb = GetComponent<Rigidbody2D>();
+        _stats = GetComponent<CharacterStats>();
         //_animator = GetComponent<Animator>();
 
         _actions.Player.Enable();
     }
 
     private void Update()
-    {
+    {    
+        if (_stats._enteringScene) return;  
         _horizontalInput = GetInput().x;
         _verticalInput = GetInput().y;
         if (_actions.Player.Jump.WasPressedThisFrame() )
@@ -102,6 +105,7 @@ public class Movement2D : MonoBehaviour
         {
             _jumpBufferCounter -= Time.deltaTime;
         }
+
         if (_actions.Player.Dash.WasPressedThisFrame())
         {
             Debug.Log("dash");
@@ -111,6 +115,7 @@ public class Movement2D : MonoBehaviour
         {
             _dashBufferCounter -= Time.deltaTime;
         }
+
         //Animations();
         if (_horizontalInput < 0 && _facingRigth && !_wallGrab)
         {
@@ -124,6 +129,7 @@ public class Movement2D : MonoBehaviour
 
     private void FixedUpdate()
     {
+        if (_stats._enteringScene) return; 
         CheckCollisions();
         if (_canDash) StartCoroutine(Dash(_horizontalInput, _verticalInput));
         if (!_isDashing)
@@ -389,6 +395,26 @@ public class Movement2D : MonoBehaviour
     private Vector2 GetInput()
     {
         return new Vector2(_actions.Player.Move.ReadValue<Vector2>().x, _actions.Player.Move.ReadValue<Vector2>().y);
+    }
+
+    public IEnumerator WalkIntoNewScene(Vector2 exitDir, float delay)
+    {
+        if (exitDir.y > 0f)
+        {
+            _rb.velocity = _jumpForce * exitDir;
+        }
+
+        if (exitDir.x != 0f)
+        {
+            _horizontalInput = exitDir.x > 0 ? 1f : -1f;
+
+            MoveCharacter();
+        }
+
+        Flip();
+
+        yield return new WaitForSeconds(delay);
+        _stats._enteringScene = false;
     }
 
     private void OnDrawGizmos()
