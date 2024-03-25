@@ -10,10 +10,11 @@ public class CharacterStats : MonoBehaviour
     public bool _enteringScene = false;
     [SerializeField] private float _maxHealth;
     [SerializeField] private float _invincibleTime;
-    private float _currentHealth;
+    public float _currentHealth {get; private set;}
+    public bool _isDead{get; private set;}
     private float _invincibleTimeCounter;
     private Vector3 _lastPosition;
-    private bool _isDead;
+    private Vector3 _lastCheckPointPosition;
     private bool _isInvincible;
     private bool _takingDamage;
     private string _tag;
@@ -55,7 +56,7 @@ public class CharacterStats : MonoBehaviour
         }
         else if (_isDead)
         {
-            //GameManager.Instance.CharaterIsDead(_isDead, _tag, _character);
+            GameManager.Instance.CharaterIsDead(_isDead, _tag, _character);
         }
     }
 
@@ -69,8 +70,7 @@ public class CharacterStats : MonoBehaviour
         }
         else if (_currentHealth <= 0f && !_isInvincible)
         {
-            //death animation
-            _isDead = true;
+            Death();
         }
     }
 
@@ -102,6 +102,11 @@ public class CharacterStats : MonoBehaviour
         _lastPosition = lastPosition;
     }
 
+    public void SaveLastCheckPoint(Vector3 checkPoint)
+    {
+        _lastCheckPointPosition = checkPoint;
+    }
+
     public void Respawn()
     {
         transform.position = _lastPosition;
@@ -130,5 +135,13 @@ public class CharacterStats : MonoBehaviour
     public void EnteringScene(Vector2 enteringDirection, float duration)
     {
         StartCoroutine(_controller.WalkIntoNewScene(enteringDirection, duration));
+    }
+    public IEnumerator Death()
+    {
+        _isDead = true;
+        Time.timeScale = 1f;
+        //death animation
+
+        yield return new WaitForSeconds(1f);
     }
 }

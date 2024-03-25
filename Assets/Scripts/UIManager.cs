@@ -8,6 +8,8 @@ public class UIManager : MonoBehaviour
 
     public SceneFader sceneFader;
 
+    [SerializeField] private GameObject _gameOverScreen;
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -22,5 +24,12 @@ public class UIManager : MonoBehaviour
         sceneFader = GetComponentInChildren<SceneFader>();
     }
 
+    public IEnumerator ActiveGameOverScreen()
+    {
+        yield return new WaitForSeconds(0.8f);
+        StartCoroutine(sceneFader.Fade(SceneFader.FadeDirection.In));
 
+        yield return new WaitForSeconds(0.8f);
+        _gameOverScreen.SetActive(true);
+    }
 }

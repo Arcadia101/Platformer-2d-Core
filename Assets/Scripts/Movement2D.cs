@@ -94,7 +94,9 @@ public class Movement2D : MonoBehaviour
 
     private void Update()
     {    
-        if (_stats._enteringScene) return;  
+        if (_stats._enteringScene) return;
+        if (_stats._isDead) return;
+  
         _horizontalInput = GetInput().x;
         _verticalInput = GetInput().y;
         if (_actions.Player.Jump.WasPressedThisFrame() )
@@ -129,7 +131,8 @@ public class Movement2D : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (_stats._enteringScene) return; 
+        if (_stats._enteringScene) return;
+        if (_stats._isDead) return; 
         CheckCollisions();
         if (_canDash) StartCoroutine(Dash(_horizontalInput, _verticalInput));
         if (!_isDashing)
@@ -153,6 +156,7 @@ public class Movement2D : MonoBehaviour
             _wallJumpsCounter = _maxWallJumps;
             _rb.gravityScale = 1f;
             _hasDashed = false;
+            _stats.SaveLastPosition(transform.position);
 
         }
         else
@@ -415,6 +419,16 @@ public class Movement2D : MonoBehaviour
 
         yield return new WaitForSeconds(delay);
         _stats._enteringScene = false;
+    }
+
+    public void AddExtraJumps(int value)
+    {
+        _extraJumpsValue += value;
+    }
+
+    public void AddExtraDash()
+    {
+        _hasDashed = false;
     }
 
     private void OnDrawGizmos()

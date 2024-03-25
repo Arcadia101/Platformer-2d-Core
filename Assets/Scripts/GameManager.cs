@@ -19,4 +19,14 @@ public class GameManager : MonoBehaviour
         }
         DontDestroyOnLoad(gameObject);
     }
+
+
+    public void CharaterIsDead(bool isDead, string tag, GameObject character)
+    {
+        if (tag == "Player")
+        {
+            UIManager.Instance.ActiveGameOverScreen();
+        }
+        character.SetActive(false);
+    }
 }

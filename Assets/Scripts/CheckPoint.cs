@@ -1,18 +1,29 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
-public class CheckPoint : MonoBehaviour
+public class CheckPoint : MonoBehaviour, IInteractable
 {
-    // Start is called before the first frame update
+    public string _sceneName {get; private set;}
+    public bool _active;
+
     void Start()
     {
-        
+        _sceneName = SceneManager.GetActiveScene().name;
     }
 
-    // Update is called once per frame
-    void Update()
+    public void Interact()
     {
-        
+        if (_active)
+        {
+            Debug.Log("Checkpoint Activated");
+        }
+        else
+        {
+            Debug.Log("Checkpoint Interact");
+            _active = true;
+        }
     }
+
 }
